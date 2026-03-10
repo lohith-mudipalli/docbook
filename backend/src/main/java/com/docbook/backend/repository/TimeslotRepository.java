@@ -4,7 +4,11 @@ import com.docbook.backend.model.Doctor;
 import com.docbook.backend.model.Timeslot;
 import com.docbook.backend.model.TimeslotStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
+import jakarta.persistence.LockModeType;
+import java.util.Optional;
 import java.util.List;
 import java.time.Instant;
 
@@ -21,4 +25,8 @@ public interface TimeslotRepository extends JpaRepository<Timeslot, Long> {
         Instant start,
         Instant end
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("Select t from Timeslot t WHERE t.id = :id")
+    Optional<Timeslot> findByIdForUpdate(Long id);
 }
