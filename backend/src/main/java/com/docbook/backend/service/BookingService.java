@@ -16,13 +16,15 @@ public class BookingService {
     private final DoctorRepository doctorRepo;
     private final AuditLogRepository auditRepo;
     private final CurrentUserService currentUser;
+    private final NotificationService notificationService;
 
-    public BookingService(TimeslotRepository timeslotRepo, AppointmentRepository appointmentRepo, DoctorRepository doctorRepo, AuditLogRepository auditRepo, CurrentUserService currentUser) {
+    public BookingService(TimeslotRepository timeslotRepo, AppointmentRepository appointmentRepo, DoctorRepository doctorRepo, AuditLogRepository auditRepo, CurrentUserService currentUser, NotificationService notificationService) {
         this.timeslotRepo = timeslotRepo;
         this.appointmentRepo = appointmentRepo;
         this.doctorRepo = doctorRepo;
         this.auditRepo = auditRepo;
         this.currentUser = currentUser;
+        this.notificationService = notificationService;
     }
 
     //Patient Book AVAILABLE timeslot
@@ -69,6 +71,13 @@ public class BookingService {
             "{\"timeslotId\":" + timeslotId + "}"
         ));
 
+        //Notification Service for enqueue email job
+        notificationService.enqueueAppointmentBookedEmail(
+            patient.getEmail(),
+            appt.getId(),
+            start.toString(),
+             end.toString()
+            );
         return appt;
 
     }
@@ -116,5 +125,7 @@ public class BookingService {
                 Instant.now(),
                 "{}"
         ));
+
+
     }
 }
