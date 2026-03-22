@@ -1,5 +1,8 @@
 package com.docbook.backend.service;
 
+import com.docbook.backend.exception.ApiExceptions.Conflict;
+import com.docbook.backend.exception.ApiExceptions.Forbidden;
+import com.docbook.backend.exception.ApiExceptions.NotFound;
 import com.docbook.backend.model.*;
 import com.docbook.backend.repository.*;
 import org.springframework.stereotype.Service;
@@ -7,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.time.Instant;
+
+import static com.docbook.backend.exception.ApiExceptions.*;
 
 @Service
 public class BookingService {
@@ -33,14 +38,14 @@ public class BookingService {
         User patient = currentUser.get();
 
         if(patient.getRole() != Role.PATIENT) {
-            throw new RuntimeException("Only PATIENT can book");
+            throw new Forbidden("Only PATIENT can book");
         }
 
         //Lock row to prevent double booking
-        Timeslot slot = timeslotRepo.findByIdForUpdate(timeslotId). orElseThrow(() -> new RuntimeException("Timeslot not found"));
+        Timeslot slot = timeslotRepo.findByIdForUpdate(timeslotId).orElseThrow(() -> new NotFound("Timeslot not found"));
 
         if(slot.getStatus() != TimeslotStatus.AVAILABLE) {
-            throw new RuntimeException("Timeslot not available");
+            throw new Conflict("Timeslot not available");
         }
 
         Doctor doctor = slot.getDoctor();
@@ -50,7 +55,7 @@ public class BookingService {
         //Extra Safety: overlap check( if you ever allow custom times)
         boolean overlap = appointmentRepo.existsByDoctorAndStatusAndStartTimeUtcLessThanAndEndTimeUtcGreaterThan(doctor, AppointmentStatus.CONFIRMED, end, start);
         if(overlap) {
-            throw new RuntimeException("Slot overlaps with existing appointment");
+            throw new Conflict("Slot overlaps with existing appointment");
         }
 
         //Mark slot as BOOKED
@@ -90,7 +95,7 @@ public class BookingService {
             return appointmentRepo.findAllByPatient(u);
         }
         if(u.getRole() == Role.DOCTOR) {
-            Doctor d = doctorRepo.findByUser(u).orElseThrow(() -> new RuntimeException("Doctor profile is missing"));
+            Doctor d = doctorRepo.findByUser(u).orElseThrow(() -> new NotFound("Doctor profile is missing"));
             return appointmentRepo.findAllByDoctor(d);
         }
         return appointmentRepo.findAll(); // For Admin
@@ -101,7 +106,7 @@ public class BookingService {
     public void cancel(Long appointmentId) {
         User actor = currentUser.get();
         Appointment appt = appointmentRepo.findById(appointmentId)
-                    .orElseThrow(() -> new RuntimeException("Appointment not found"));
+                    .orElseThrow(() -> new NotFound("Appointment not found"));
         boolean allowed = false;
 
         if(actor.getRole() == Role.ADMIN) {
@@ -109,11 +114,11 @@ public class BookingService {
         } else if(actor.getRole() == Role.PATIENT) {
             allowed = appt.getPatient().getId().equals(actor.getId());
         } else if(actor.getRole() == Role.DOCTOR) {
-            Doctor d = doctorRepo.findByUser(actor). orElseThrow(() -> new RuntimeException("Doctor Profile Missing"));
+            Doctor d = doctorRepo.findByUser(actor). orElseThrow(() -> new NotFound("Doctor Profile Missing"));
             allowed = appt.getDoctor().getId().equals(d.getId());
         }
 
-        if(!allowed) throw new RuntimeException("Forbidden");
+        if(!allowed) throw new Forbidden("Forbidden");
 
         appt.setStatus(AppointmentStatus.CANCELLED);
 
