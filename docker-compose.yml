@@ -1,0 +1,64 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: docbook_db
+    environment:
+      MYSQL_DATABASE: docbook_db
+      MYSQL_USER: docbook_user
+      MYSQL_PASSWORD: docbook_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: docbook_mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  backend:
+    build: ./backend
+    container_name: docbook_backend
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: docbook_db
+      DB_USER: docbook_user
+      DB_PASSWORD: docbook_pass
+
+      JWT_SECRET: docbook_super_secret_change_me_please_make_it_long_123456789
+      JWT_EXP_MS: 86400000
+
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      MAIL_FROM: "no-reply@docbook.local"
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: docbook_frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: "http://localhost:8080"
+    ports:
+      - "5173:80"
+
+volumes:
+  dbdata:
