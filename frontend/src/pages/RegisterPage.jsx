@@ -1,30 +1,25 @@
 import { useState } from "react";
 import client from "../api/client";
-import { getAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
-  async function onLogin(e) {
+  async function onRegister(e) {
     e.preventDefault();
+    setMsg("");
     setError("");
 
     try {
-      const res = await client.post("/api/auth/login", { email, password });
-      localStorage.setItem("token", res.data.token);
-
-      const { role } = getAuth();
-
-      if (role === "PATIENT") nav("/patient");
-      else if (role === "DOCTOR") nav("/doctor");
-      else if (role === "ADMIN") nav("/admin");
-      else nav("/login");
+      await client.post("/api/auth/register", { email, password });
+      setMsg("Account created successfully. Please login.");
+      setTimeout(() => nav("/login"), 700);
     } catch (err) {
-      setError(err?.response?.data?.message || "Login failed");
+      setError(err?.response?.data?.message || "Registration failed");
     }
   }
 
@@ -42,23 +37,23 @@ export default function LoginPage() {
         </div>
 
         <div style={styles.headerBlock}>
-          <h1 style={styles.title}>Sign in</h1>
+          <h1 style={styles.title}>Create account</h1>
           <p style={styles.subtitle}>
-            Enter your email and password to access your portal.
+            Register as a patient to book and manage appointments.
           </p>
         </div>
 
-        <form onSubmit={onLogin} style={styles.form}>
+        <form onSubmit={onRegister} style={styles.form}>
           <div style={styles.fieldGroup}>
             <label htmlFor="email" style={styles.label}>
               Email
             </label>
             <input
               id="email"
+              type="email"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              type="email"
               style={styles.input}
             />
           </div>
@@ -69,18 +64,19 @@ export default function LoginPage() {
             </label>
             <input
               id="password"
+              type="password"
+              placeholder="Minimum 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              type="password"
               style={styles.input}
             />
           </div>
 
+          {msg && <div style={styles.success}>{msg}</div>}
           {error && <div style={styles.error}>{error}</div>}
 
           <button type="submit" style={styles.primaryButton}>
-            Sign in
+            Create Account
           </button>
         </form>
 
@@ -91,13 +87,11 @@ export default function LoginPage() {
         </div>
 
         <div style={styles.bottomSection}>
-          <Link to="/register" style={styles.linkButton}>
-            Create Patient Account
-          </Link>
-
-          <p style={styles.note}>
-            New users can register as patients. Doctor and Admin roles are
-            managed separately.
+          <p style={styles.loginText}>
+            Already have an account?{" "}
+            <Link to="/login" style={styles.loginLink}>
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
@@ -127,7 +121,7 @@ const styles = {
     background:
       "radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.05) 35%, rgba(255,255,255,0) 70%)",
     top: "-120px",
-    right: "-120px",
+    left: "-120px",
     borderRadius: "50%",
     pointerEvents: "none",
   },
@@ -227,6 +221,15 @@ const styles = {
     background: "#fff",
   },
 
+  success: {
+    background: "#ecfdf5",
+    color: "#059669",
+    border: "1px solid #a7f3d0",
+    borderRadius: "12px",
+    padding: "10px 12px",
+    fontSize: "14px",
+  },
+
   error: {
     background: "#fef2f2",
     color: "#dc2626",
@@ -275,25 +278,17 @@ const styles = {
     alignItems: "center",
   },
 
-  linkButton: {
-    width: "100%",
-    textAlign: "center",
-    textDecoration: "none",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    color: "#111827",
-    background: "#ffffff",
-    fontSize: "14px",
-    fontWeight: 600,
-    boxSizing: "border-box",
-  },
-
-  note: {
+  loginText: {
     margin: 0,
     textAlign: "center",
-    fontSize: "12px",
+    fontSize: "14px",
     color: "#6b7280",
     lineHeight: 1.5,
+  },
+
+  loginLink: {
+    color: "#2563eb",
+    textDecoration: "none",
+    fontWeight: 600,
   },
 };

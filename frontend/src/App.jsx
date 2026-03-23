@@ -4,6 +4,8 @@ import PatientDashboard from "./pages/PatientDashboard";
 import DoctorPortal from "./pages/DoctorPortal";
 import AdminPanel from "./pages/AdminPanel";
 import { getAuth } from "./hooks/useAuth";
+import RegisterPage from "./pages/RegisterPage";
+
 
 function RequireRole({ allowed, children }) {
   const { token, role } = getAuth();
@@ -17,6 +19,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       <Route
         path="/patient"
