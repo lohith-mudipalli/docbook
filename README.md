@@ -31,6 +31,55 @@ A production-style healthcare appointment scheduling system built with **Spring 
 - **Docker + Docker Compose**
 - **GitHub Actions CI** (backend tests on push/PR)
 
+## Architecture Diagram
+
+```mermaid
+flowchart TB
+    P["Patient"]
+    D["Doctor"]
+    A["Admin"]
+
+    FE["React Frontend (Vite)<br/>Login / Register / Dashboards<br/>FullCalendar + Axios"]
+
+    BE["Spring Boot Backend<br/>REST APIs + Business Logic"]
+    SEC["Spring Security<br/>JWT Authentication + RBAC"]
+
+    SCH["Scheduling Engine<br/>Availability Rules + Timeslot Generation"]
+    BOOK["Booking Service<br/>Conflict Detection + Row Locking"]
+    AUD["Audit Logging"]
+    NOTIF["Notification Queue + Worker<br/>Retry / Backoff"]
+
+    DB["MySQL Database<br/>Users / Doctors / Availability<br/>Timeslots / Appointments / Notification Jobs"]
+    MAIL["MailHog<br/>Local Email Testing"]
+
+    DOCKER["Docker Compose"]
+    CI["GitHub Actions CI"]
+
+    P --> FE
+    D --> FE
+    A --> FE
+
+    FE -->|"HTTP / JSON API Requests"| BE
+    BE --> SEC
+    BE --> SCH
+    BE --> BOOK
+    BE --> AUD
+    BE --> NOTIF
+
+    SCH --> DB
+    BOOK --> DB
+    AUD --> DB
+    NOTIF --> DB
+
+    NOTIF -->|"Sends Emails"| MAIL
+
+    DOCKER -. Runs .-> FE
+    DOCKER -. Runs .-> BE
+    DOCKER -. Runs .-> DB
+    DOCKER -. Runs .-> MAIL
+
+    CI -. Tests Backend .-> BE
+```
 ---
 
 ## Core Features (Enterprise Highlights)
